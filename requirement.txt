@@ -1,0 +1,7 @@
+autopy
+pynput==1.6.8
+pydirectinput
+pyautogui
+pywin32
+opencv-python
+pyinstaller
