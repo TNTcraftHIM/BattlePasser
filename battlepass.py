@@ -1,7 +1,6 @@
 from pynput import keyboard
 from sys import exit
 from os import system
-from autopy import mouse
 import builtins
 import threading
 import pydirectinput as input
@@ -83,7 +82,7 @@ def gamePrep():
             break
         position = auto.locateCenterOnScreen(str(i)+'.png', confidence=0.8)
         if position is not None:
-            mouse.smooth_move(position[0],position[1])
+            auto.moveTo(position[0],position[1],duration=random.randint(1, 3))
             time.sleep(random.randrange(0, 1))
             input.click(clicks=3, duration=1)
             if i == maxnum:
