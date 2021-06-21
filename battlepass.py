@@ -1,6 +1,6 @@
 from pynput import keyboard
 from sys import exit
-from os import system
+from os import system, path
 import builtins
 import threading
 import pydirectinput as input
@@ -154,7 +154,14 @@ if __name__ == '__main__':
     except:
         stop("Please enter integer only, exiting...")
     if maxnum < 1:
-        stop("You would need at least 1 identifier, exiting...")
+        stop("Please enter at least 1 identifier, exiting...")
+    for i in range(1, maxnum+1):
+        if not path.exists(str(i)+".png"):
+            stop("Picture identifiers filename mismatch, exiting...")
+    if not path.exists("0.png"):
+        stop("Game ending picture identifier missing, exiting...")
+    if not path.exists("-1.png"):
+        stop("Game aborting picture identifier missing, exiting...")
     print("Press F5/F6/F7 to start/stop/exit")
     input.FAILSAFE=False
     auto.FAILSAFE=False
