@@ -1,1 +1,1 @@
-pyinstaller --onefile battlepass.py --icon=icon.ico
+pyinstaller --onefile battlepass.py --icon=icon.ico --version-file file_version_info.txt
