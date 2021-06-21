@@ -29,7 +29,7 @@ def resetCursor():
 
 def stop(word):
     resetControl()
-    print("["+time.strftime("%Y-%m-%d %H:%S")+"]",word)
+    print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
     system("pause")
     exit()
 
@@ -37,12 +37,12 @@ def on_press(key):
     global started, exiting, skipPrep
     if (key == keyboard.Key.f5):
         started=True
-        print("["+time.strftime("%Y-%m-%d %H:%S")+"]","starting...")
+        print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","starting...")
     elif (key == keyboard.Key.f6):
         started=False
         skipPrep=False
         resetControl()
-        print("["+time.strftime("%Y-%m-%d %H:%S")+"]","stopping...")
+        print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","stopping...")
     elif (key == keyboard.Key.f7):
         started=False
         exiting=True
@@ -98,7 +98,7 @@ def gamePrep():
             input.click(clicks=3, duration=1)
             if i == maxnum:
                 skipPrep=True
-                print("["+time.strftime("%Y-%m-%d %H:%S")+"]","game started")
+                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game started")
                 break
         else:
             if i >= maxnum:
@@ -115,11 +115,11 @@ def mainLoop():
                 break
             if auto.locateCenterOnScreen('0.png', confidence=0.5) is not None:
                 skipPrep=False
-                print("["+time.strftime("%Y-%m-%d %H:%S")+"]","game ended")
+                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game ended")
                 continue
             if auto.locateCenterOnScreen('-1.png', confidence=0.5) is not None:
                 skipPrep=False
-                print("["+time.strftime("%Y-%m-%d %H:%S")+"]","game aborted")
+                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game aborted")
                 input.press('esc')
                 continue
             randKey()
@@ -141,7 +141,7 @@ def mainLoop():
             input.press('1')
             time.sleep(random.uniform(0, 3))
         except (auto.FailSafeException, input.FailSafeException):
-            print("["+time.strftime("%Y-%m-%d %H:%S")+"]","Failsafe detected, resetting cursor...")
+            print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","Failsafe detected, resetting cursor...")
             resetCursor()
             continue
         except Exception as e:
