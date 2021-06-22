@@ -1,20 +1,70 @@
 from pynput import keyboard
-from sys import exit
-from os import system, path
-import builtins
+from os import system, path, listdir, curdir
 import threading
 import pydirectinput as input
 import pyautogui as auto
-import win32con, win32api
+import win32con, win32api, win32gui
 import random
 import time
 
-exiting=False
+maxnum=0
+mainExiting=False
 started=False
 skipPrep=False
 input.FAILSAFE=False
 auto.FAILSAFE=False
-maxnum=0
+
+def printf(word):
+    print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
+
+def findGame():
+    global started, skipPrep
+    gameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
+    platHWND=win32gui.FindWindow(0, "Battle.net")
+    if not platHWND:
+        stop("Battle.net not running, exiting...")
+    if not gameHWND:
+        printf("Game not running, booting...")
+        gameSwitched=False
+        while not win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®"):
+            try:
+                if started:
+                    notFound=True
+                    position = auto.locateCenterOnScreen('-2.png', confidence=0.8)
+                    if position is not None:
+                        gameSwitched=True
+                        notFound=False
+                    else:
+                        gameSwitched=False
+                    position = auto.locateCenterOnScreen('-3.png', confidence=0.8)
+                    if position is not None and not gameSwitched:
+                        auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+                        time.sleep(random.uniform(0, 1))
+                        input.click(clicks=3, duration=1)
+                        notFound=False
+                    position = auto.locateCenterOnScreen('-4.png', confidence=0.8)
+                    if position is not None and gameSwitched:
+                        auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+                        time.sleep(random.uniform(0, 1))
+                        input.click(clicks=3, duration=1)
+                        notFound=False
+                    promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
+                    if promptHWND:
+                        win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+                        win32gui.SetForegroundWindow(promptHWND)
+                        input.press('n')
+                        notFound=False
+                    if notFound:
+                        win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
+                        win32gui.BringWindowToTop(platHWND)
+                        win32gui.SetActiveWindow(platHWND)
+                        win32gui.SetForegroundWindow(platHWND)
+            except:
+                stop("Game booting failed, exiting...")
+            time.sleep(0.1)
+        skipPrep=False
+    win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
+    win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
 
 def resetControl():
     input.keyUp('w')
@@ -27,36 +77,39 @@ def resetControl():
 def resetCursor():
     auto.moveTo(win32api.GetSystemMetrics(0)//2,win32api.GetSystemMetrics(1)//2, duration=random.uniform(1,3), tween=auto.easeOutQuad)
 
-def stop(word):
+def stop(exitWord):
+    global mainExiting
     resetControl()
-    print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
-    system("pause")
-    exit()
+    printf(exitWord)
+    mainExiting=True
+    time.sleep(1)
 
 def on_press(key):
-    global started, exiting, skipPrep
+    global started, skipPrep
     if (key == keyboard.Key.f5):
         started=True
-        print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","starting...")
+        printf("starting...")
     elif (key == keyboard.Key.f6):
+        if started:
+            started=False
+            skipPrep=False
+            resetControl()
+            printf("stopping...")
+
+def on_release(key):
+    global started
+    if key == keyboard.Key.f7:
         started=False
-        skipPrep=False
-        resetControl()
-        print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","stopping...")
-    elif (key == keyboard.Key.f7):
-        started=False
-        exiting=True
-        exit()
+        stop("exiting...")
+        return False
 
 def keyBoardListener():
-    with keyboard.Listener(on_press=on_press) as listener:
+    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
 
 def startListener():
-    global started, exiting
+    global started
     while True:
-        if exiting:
-            stop("exiting...")
         if started:
             mainLoop()
         time.sleep(0.1)
@@ -88,8 +141,11 @@ def randKey():
 def gamePrep():
     global skipPrep, maxnum, started
     i=1
-    while not skipPrep:
+    while True:
         if not started:
+            break
+        findGame()
+        if skipPrep:
             break
         position = auto.locateCenterOnScreen(str(i)+'.png', confidence=0.8)
         if position is not None:
@@ -98,7 +154,7 @@ def gamePrep():
             input.click(clicks=3, duration=1)
             if i == maxnum:
                 skipPrep=True
-                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game started")
+                printf("game started")
                 break
         else:
             if i >= maxnum:
@@ -115,11 +171,11 @@ def mainLoop():
                 break
             if auto.locateCenterOnScreen('0.png', confidence=0.5) is not None:
                 skipPrep=False
-                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game ended")
+                printf("game ended")
                 continue
             if auto.locateCenterOnScreen('-1.png', confidence=0.5) is not None:
                 skipPrep=False
-                print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","game aborted")
+                printf("game aborted")
                 input.press('esc')
                 continue
             randKey()
@@ -141,31 +197,58 @@ def mainLoop():
             input.press('1')
             time.sleep(random.uniform(0, 3))
         except (auto.FailSafeException, input.FailSafeException):
-            print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]","Failsafe detected, resetting cursor...")
+            printf("Failsafe detected, resetting cursor...")
             resetCursor()
             continue
         except Exception as e:
             stop("Error: " +  ("Unknown" if not str(e) else str(e)) + " occured, exiting...")
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.0]")
+    print("[BattlePasser Version 1.1]")
+    noError=True
     try:
-        maxnum = int(builtins.input("Enter the max number of picture identifiers (start from 1):"))
+        filelist=listdir(curdir)
+        for fichier in filelist[:]:
+            if not(fichier.endswith(".png")):
+                filelist.remove(fichier)
+            else:
+                try:
+                    if int(fichier[:-4]) <= 0:
+                        filelist.remove(fichier)
+                except ValueError:
+                    filelist.remove(fichier)
+        maxnum = int(filelist[-1][:-4])
     except:
-        stop("Please enter integer only, exiting...")
-    if maxnum < 1:
-        stop("Please enter at least 1 identifier, exiting...")
-    for i in range(1, maxnum+1):
-        if not path.exists(str(i)+".png"):
-            stop("Picture identifiers filename mismatch, exiting...")
-    if not path.exists("0.png"):
-        stop("Game ending picture identifier missing, exiting...")
-    if not path.exists("-1.png"):
-        stop("Game aborting picture identifier missing, exiting...")
-    print("Press F5/F6/F7 to start/stop/exit")
-    input.FAILSAFE=False
-    auto.FAILSAFE=False
-    thread1=threading.Thread(target=keyBoardListener)
-    thread1.start()
-    thread2=threading.Thread(target=startListener)
-    thread2.start()
+        stop("Reading filenames from folder failed, exiting...")
+        noError=False
+    if noError:
+        for i in range(1, maxnum+1):
+            if not path.exists(str(i)+".png"):
+                stop("Picture identifier '"+str(i)+".png' missing, exiting...")
+                noError=False
+                break
+    if not path.exists("0.png") and noError:
+        stop("Game ending picture identifier '0.png' missing, exiting...")
+        noError=False
+    if not path.exists("-1.png") and noError:
+        stop("Game aborting picture identifier '-1.png' missing, exiting...")
+        noError=False
+    if noError:
+        if not path.exists("-2.png") or not path.exists("-3.png") or not path.exists("-4.png"):
+            stop("Game rebooting picture identifier(s) '-2.png/-3.png/-4.png' missing, exiting...")
+            noError=False
+    if noError:
+        print("Press F5/F6/F7 to start/stop/exit")
+        input.FAILSAFE=False
+        auto.FAILSAFE=False
+        thread1=threading.Thread(target=keyBoardListener)
+        thread1.daemon=True
+        thread1.start()
+        thread2=threading.Thread(target=startListener)
+        thread2.daemon=True
+        thread2.start()
+    while True:
+        if mainExiting:
+            system("pause")
+            break
+        time.sleep(1)

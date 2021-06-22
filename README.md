@@ -5,4 +5,6 @@ A Call of Duty MW Battle pass AFK level-up script
 See [this document](说明.txt)
 
 ## TODOs
-auto detect game crash (maybe)
+user-defined keys
+inapp user setup instruction
+read/write config
