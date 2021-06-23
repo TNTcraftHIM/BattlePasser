@@ -21,99 +21,114 @@ def printf(word):
         print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
 
 def findUnexpected():
-    global skipPrep, unexpected
-    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep:
+    global skipPrep, unexpected, started
+    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep and started:
         skipPrep=False
         printf("game ended")
         resetCursor()
-        return True
-    if auto.locateCenterOnScreen('game_abort.png', confidence=0.5) is not None and skipPrep:
+        return
+    if auto.locateCenterOnScreen('game_abort.png', confidence=0.5) is not None and skipPrep and started:
         skipPrep=False
         printf("game aborted")
         resetCursor()
         input.press('esc')
-        return True
-    if auto.locateCenterOnScreen('game_update.png', confidence=0.8) is not None:
+        return
+    if auto.locateCenterOnScreen('game_update.png', confidence=0.8) is not None and started:
         skipPrep=False
+        position=None
         if not unexpected:
             unexpected=True
             printf("game updated")
-        position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
-        if position is None:
+        if started:
+            position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
+        if position is None and started:
             position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
-        if position is not None:
+        if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
             input.click()
-        return True
-    if auto.locateCenterOnScreen('game_disconnect.png', confidence=0.8) is not None:
+        return
+    if auto.locateCenterOnScreen('game_disconnect.png', confidence=0.8) is not None and started:
         skipPrep=False
+        position=None
         if not unexpected:
             unexpected=True
             printf("game disconnnected")
-        position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
-        if position is not None:
+        if started:
+            position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
+        if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
             input.click()
-        return True
-    return False
+        return
 
 def findGame():
     global started, skipPrep, unexpected
     gameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
     platHWND=win32gui.FindWindow(0, "Battle.net")
-    if not platHWND:
+    if not platHWND and started:
         stop("Battle.net not running, exiting...")
-    if not gameHWND:
+    if not gameHWND and started:
         printf("Game not running, booting...")
-        skipPrep=False
+        if skipPrep and started:
+            resetControl()
+            skipPrep=False
         gameSwitched=False
-        while not win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®"):
+        while not win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®") and started:
+            notFound=True
+            position=None
             if started:
-                notFound=True
                 position = auto.locateCenterOnScreen('plat_identify.png', confidence=0.8)
-                if position is not None:
-                    gameSwitched=True
-                    notFound=False
-                else:
-                    gameSwitched=False
+            if position is not None:
+                gameSwitched=True
+                notFound=False
+            else:
+                gameSwitched=False
+            if started:
                 position = auto.locateCenterOnScreen('plat_switch.png', confidence=0.8)
-                if position is not None and not gameSwitched:
-                    auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
-                    time.sleep(random.uniform(0, 1))
-                    input.click(clicks=3, duration=1)
-                    notFound=False
+            if position is not None and not gameSwitched and started:
+                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+                time.sleep(random.uniform(0, 1))
+                input.click(clicks=3, duration=1)
+                notFound=False
+            if started:
                 position = auto.locateCenterOnScreen('plat_start.png', confidence=0.8)
-                if position is not None and gameSwitched:
-                    auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
-                    time.sleep(random.uniform(0, 1))
-                    input.click(clicks=3, duration=1)
-                    notFound=False
-                promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
-                if promptHWND:
-                    win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
-                    win32gui.SetForegroundWindow(promptHWND)
-                    input.press('n')
-                    notFound=False
-                promptHWND=win32gui.FindWindow(0, "设置为最佳设置？")
-                if promptHWND:
-                    win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
-                    win32gui.SetForegroundWindow(promptHWND)
-                    input.press('n')
-                    notFound=False
-                if notFound:
+            if position is not None and gameSwitched and started:
+                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+                time.sleep(random.uniform(0, 1))
+                input.click(clicks=3, duration=1)
+                notFound=False
+            promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
+            if promptHWND and started:
+                win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+                win32gui.SetForegroundWindow(promptHWND)
+                input.press('n')
+                notFound=False
+            promptHWND=win32gui.FindWindow(0, "设置为最佳设置？")
+            if promptHWND and started:
+                win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+                win32gui.SetForegroundWindow(promptHWND)
+                input.press('n')
+                notFound=False
+            if notFound and started:
+                platHWND=win32gui.FindWindow(0, "Battle.net")
+                if platHWND:
                     win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
                     win32gui.BringWindowToTop(platHWND)
                     win32gui.SetActiveWindow(platHWND)
                     win32gui.SetForegroundWindow(platHWND)
+                else:
+                    stop("Battle.net not running, exiting...")
             time.sleep(0.1)
-        resetCursor()
-        unexpected=False
+        if started and unexpected:
+            resetCursor()
+            unexpected=False
     else:
-        win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
-        findUnexpected()
-    win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
+        if started:
+            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
+            findUnexpected()
+    if started:
+        win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
 
 def resetControl():
     input.keyUp('w')
@@ -153,7 +168,6 @@ def on_press(key):
             printf("stopping...")
 
 def on_release(key):
-    global started
     if key == keyboard.Key.f7:
         stop("exiting...")
         return False
@@ -170,19 +184,26 @@ def startListener():
         time.sleep(0.1)
 
 def moveMouse(duration):
+    global started
     xOffSet = random.randint(-2,2)
     yOffSet = random.randint(-1,1)
     for _ in range(int(duration*1000)):
+        if not started:
+            break
         win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, xOffSet, yOffSet, 0, 0)
 
 def randKey():
+    global started
     for _ in range (4):
+        if not started:
+            break
         seed = random.randint(0,3)
         if seed == 0:
             input.keyUp('s')
             input.keyDown('w')
             time.sleep(random.uniform(0.1,0.2))
-            input.press('shift')
+            if started:
+                input.press('shift')
         if seed == 1:
             input.keyUp('d')
             input.keyDown('a')
@@ -192,67 +213,81 @@ def randKey():
         if seed == 3:
             input.keyUp('a')
             input.keyDown('d')
-        time.sleep(random.uniform(0.1,0.3))
+        if started:
+            time.sleep(random.uniform(0.1,0.3))
 
 def gamePrep():
-    global skipPrep, maxnum, started, mainExiting
+    global skipPrep, maxnum, started
     i=1
-    while True:
-        if not started or mainExiting:
-            break
+    while started:
         findGame()
         if skipPrep:
             break
         position = auto.locateCenterOnScreen(str(i)+'.png', confidence=0.8)
         if position is not None:
-            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeOutQuad)
-            time.sleep(random.uniform(0, 1))
-            input.click(clicks=3, duration=1)
-            if i == maxnum:
-                skipPrep=True
-                printf("game started")
-                break
+            if started:
+                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeOutQuad)
+                time.sleep(random.uniform(0, 1))
+            if started:
+                input.click(clicks=3, duration=1)
+                if i == maxnum:
+                    skipPrep=True
+                    printf("game started")
+                    break
         else:
             if i >= maxnum:
                 i = 0
-                resetCursor()
-        i += 1
-        time.sleep(0.1)
+                if started:
+                    resetCursor()
+        if started:
+            i += 1
+            time.sleep(0.1)
 
 def mainLoop():
-    global started, skipPrep, mainExiting
+    global started, skipPrep
     while True:
         try:
             gamePrep()
-            if not started or mainExiting:
+            if not started:
+                resetControl()
                 break
-            randKey()
-            time.sleep(random.uniform(0, 3))
-            input.press('space')
-            time.sleep(random.uniform(0, 3))
-            input.press('c')
-            time.sleep(random.uniform(1, 2))
-            input.press('space')
-            moveMouse(round(random.uniform(0, 4),3))
-            input.rightClick()
-            time.sleep(random.uniform(0, 1))
-            input.mouseDown()
-            time.sleep(random.uniform(0, 4))
-            input.mouseUp()
-            time.sleep(random.uniform(0, 1))
-            input.rightClick()
-            time.sleep(random.uniform(0, 1))
-            input.press('1')
-            time.sleep(random.uniform(0, 3))
+            if started:
+                randKey()
+                time.sleep(random.uniform(0, 3))
+            if started:
+                input.press('space')
+                time.sleep(random.uniform(0, 3))
+            if started:
+                input.press('c')
+                time.sleep(random.uniform(1, 2))
+            if started:
+                input.press('space')
+            if started:
+                moveMouse(round(random.uniform(0, 4),3))
+                input.rightClick()
+                time.sleep(random.uniform(0, 1))
+            if started:
+                input.mouseDown()
+                time.sleep(random.uniform(0, 4))
+            if started:
+                input.mouseUp()
+                time.sleep(random.uniform(0, 1))
+            if started:
+                input.rightClick()
+                time.sleep(random.uniform(0, 1))
+            if started:
+                input.press('1')
+                time.sleep(random.uniform(0, 3))
         except (auto.FailSafeException, input.FailSafeException):
-            printf("Failsafe detected, resetting...")
-            resetCursor()
+            if started:
+                printf("Failsafe detected, resetting...")
+                resetCursor()
             continue
         except Exception as e:
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.21]")
+    print("[BattlePasser Version 1.22]")
     noError=True
     try:
         filelist=listdir(curdir)
