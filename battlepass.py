@@ -11,44 +11,94 @@ maxnum=0
 mainExiting=False
 started=False
 skipPrep=False
+unexpected=False
 input.FAILSAFE=False
 auto.FAILSAFE=False
 
 def printf(word):
     print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
 
+def findUnexpected():
+    global skipPrep, unexpected
+    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep:
+        skipPrep=False
+        printf("game ended")
+        resetCursor()
+        return True
+    if auto.locateCenterOnScreen('game_abort.png', confidence=0.5) is not None and skipPrep:
+        skipPrep=False
+        printf("game aborted")
+        resetCursor()
+        input.press('esc')
+        time.sleep(1)
+        return True
+    if auto.locateCenterOnScreen('game_update.png', confidence=0.8) is not None:
+        skipPrep=False
+        if not unexpected:
+            unexpected=True
+            printf("game updated")
+        position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
+        if position is None:
+            position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
+        if position is not None:
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            time.sleep(random.uniform(0, 1))
+            input.click(clicks=3, duration=1)
+            time.sleep(3)
+        return True
+    if auto.locateCenterOnScreen('game_disconnect.png', confidence=0.8) is not None:
+        skipPrep=False
+        if not unexpected:
+            unexpected=True
+            printf("game disconnnected")
+        position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
+        if position is not None:
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            time.sleep(random.uniform(0, 1))
+            input.click(clicks=3, duration=1)
+            time.sleep(3)
+        return True
+    return False
+
 def findGame():
-    global started, skipPrep
+    global started, skipPrep, unexpected
     gameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
     platHWND=win32gui.FindWindow(0, "Battle.net")
     if not platHWND:
         stop("Battle.net not running, exiting...")
     if not gameHWND:
         printf("Game not running, booting...")
+        skipPrep=False
         gameSwitched=False
         while not win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®"):
             try:
                 if started:
                     notFound=True
-                    position = auto.locateCenterOnScreen('-2.png', confidence=0.8)
+                    position = auto.locateCenterOnScreen('plat_identify.png', confidence=0.8)
                     if position is not None:
                         gameSwitched=True
                         notFound=False
                     else:
                         gameSwitched=False
-                    position = auto.locateCenterOnScreen('-3.png', confidence=0.8)
+                    position = auto.locateCenterOnScreen('plat_switch.png', confidence=0.8)
                     if position is not None and not gameSwitched:
                         auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
                         time.sleep(random.uniform(0, 1))
                         input.click(clicks=3, duration=1)
                         notFound=False
-                    position = auto.locateCenterOnScreen('-4.png', confidence=0.8)
+                    position = auto.locateCenterOnScreen('plat_start.png', confidence=0.8)
                     if position is not None and gameSwitched:
                         auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
                         time.sleep(random.uniform(0, 1))
                         input.click(clicks=3, duration=1)
                         notFound=False
                     promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
+                    if promptHWND:
+                        win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+                        win32gui.SetForegroundWindow(promptHWND)
+                        input.press('n')
+                        notFound=False
+                    promptHWND=win32gui.FindWindow(0, "设置为最佳设置？")
                     if promptHWND:
                         win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
                         win32gui.SetForegroundWindow(promptHWND)
@@ -62,9 +112,12 @@ def findGame():
             except:
                 stop("Game booting failed, exiting...")
             time.sleep(0.1)
-        skipPrep=False
+        resetCursor()
+        unexpected=False
+    else:
+        win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
+        findUnexpected()
     win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
-    win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
 
 def resetControl():
     input.keyUp('w')
@@ -75,7 +128,7 @@ def resetControl():
     input.mouseUp()
 
 def resetCursor():
-    auto.moveTo(win32api.GetSystemMetrics(0)//2,win32api.GetSystemMetrics(1)//2, duration=random.uniform(1,3), tween=auto.easeOutQuad)
+    auto.moveTo(win32api.GetSystemMetrics(0)//2,win32api.GetSystemMetrics(1)//2, duration=random.uniform(0,1), tween=auto.easeInOutQuad)
 
 def stop(exitWord):
     global mainExiting
@@ -87,8 +140,9 @@ def stop(exitWord):
 def on_press(key):
     global started, skipPrep
     if (key == keyboard.Key.f5):
-        started=True
-        printf("starting...")
+        if not started:
+            started=True
+            printf("starting...")
     elif (key == keyboard.Key.f6):
         if started:
             started=False
@@ -117,7 +171,7 @@ def startListener():
 def moveMouse(duration):
     xOffSet = random.randint(-2,2)
     yOffSet = random.randint(-1,1)
-    for _ in range(duration*1000):
+    for _ in range(int(duration*1000)):
         win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, xOffSet, yOffSet, 0, 0)
 
 def randKey():
@@ -126,6 +180,7 @@ def randKey():
         if seed == 0:
             input.keyUp('s')
             input.keyDown('w')
+            time.sleep(random.uniform(0.1,0.2))
             input.press('shift')
         if seed == 1:
             input.keyUp('d')
@@ -149,7 +204,7 @@ def gamePrep():
             break
         position = auto.locateCenterOnScreen(str(i)+'.png', confidence=0.8)
         if position is not None:
-            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeOutQuad)
             time.sleep(random.uniform(0, 1))
             input.click(clicks=3, duration=1)
             if i == maxnum:
@@ -169,15 +224,6 @@ def mainLoop():
             gamePrep()
             if not started:
                 break
-            if auto.locateCenterOnScreen('0.png', confidence=0.5) is not None:
-                skipPrep=False
-                printf("game ended")
-                continue
-            if auto.locateCenterOnScreen('-1.png', confidence=0.5) is not None:
-                skipPrep=False
-                printf("game aborted")
-                input.press('esc')
-                continue
             randKey()
             time.sleep(random.uniform(0, 3))
             input.press('space')
@@ -185,7 +231,7 @@ def mainLoop():
             input.press('c')
             time.sleep(random.uniform(1, 2))
             input.press('space')
-            moveMouse(random.randint(0, 4))
+            moveMouse(round(random.uniform(0, 4),3))
             input.rightClick()
             time.sleep(random.uniform(0, 1))
             input.mouseDown()
@@ -204,7 +250,7 @@ def mainLoop():
             stop("Error: " +  ("Unknown" if not str(e) else str(e)) + " occured, exiting...")
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.1]")
+    print("[BattlePasser Version 1.2]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -227,16 +273,33 @@ if __name__ == '__main__':
                 stop("Picture identifier '"+str(i)+".png' missing, exiting...")
                 noError=False
                 break
-    if not path.exists("0.png") and noError:
-        stop("Game ending picture identifier '0.png' missing, exiting...")
+    if not path.exists("game_end.png") and noError:
+        stop("Game ending picture identifier 'game_end.png' missing, exiting...")
         noError=False
-    if not path.exists("-1.png") and noError:
-        stop("Game aborting picture identifier '-1.png' missing, exiting...")
+    if not path.exists("game_abort.png") and noError:
+        stop("Game aborting picture identifier 'game_abort.png' missing, exiting...")
         noError=False
-    if noError:
-        if not path.exists("-2.png") or not path.exists("-3.png") or not path.exists("-4.png"):
-            stop("Game rebooting picture identifier(s) '-2.png/-3.png/-4.png' missing, exiting...")
-            noError=False
+    if not path.exists("game_update.png") and noError:
+        stop("Game updating picture identifier 'game_update.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_disconnect.png") and noError:
+        stop("Game disconnecting picture identifier 'game_disconnect.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_leave.png") and noError:
+        stop("Game leaving picture identifier 'game_leave.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_exit.png") and noError:
+        stop("Game exiting picture identifier 'game_exit.png' missing, exiting...")
+        noError=False
+    if not path.exists("plat_identify.png") and noError:
+        stop("Battle.net game identifying picture identifier 'plat_identify.png' missing, exiting...")
+        noError=False
+    if not path.exists("plat_switch.png") and noError:
+        stop("Battle.net game switching picture identifier 'plat_switch.png' missing, exiting...")
+        noError=False
+    if not path.exists("plat_start.png") and noError:
+        stop("Battle.net game starting picture identifier 'plat_start.png' missing, exiting...")
+        noError=False
     if noError:
         print("Press F5/F6/F7 to start/stop/exit")
         input.FAILSAFE=False
