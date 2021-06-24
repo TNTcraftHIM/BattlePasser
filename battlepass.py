@@ -66,14 +66,15 @@ def findGame():
     global started, skipPrep, unexpected
     gameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
     platHWND=win32gui.FindWindow(0, "Battle.net")
-    if not platHWND and started:
-        stop("Battle.net not running, exiting...")
     if not gameHWND and started:
         printf("Game not running, booting...")
         if skipPrep and started:
             resetControl()
             skipPrep=False
         gameSwitched=False
+        if not platHWND and started:
+            stop("Battle.net not running, exiting...")
+            return
         while not win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®") and started:
             notFound=True
             position=None
@@ -127,7 +128,7 @@ def findGame():
         if started:
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
             findUnexpected()
-    if started:
+    if started and platHWND:
         win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
 
 def resetControl():
@@ -287,7 +288,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.22]")
+    print("[BattlePasser Version 1.23]")
     noError=True
     try:
         filelist=listdir(curdir)
