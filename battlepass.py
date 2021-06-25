@@ -22,12 +22,12 @@ def printf(word):
 
 def findUnexpected():
     global skipPrep, unexpected, started
-    if auto.locateCenterOnScreen('game_end.png', confidence=0.65) is not None and skipPrep and started:
+    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep and started:
         skipPrep=False
         printf("game ended")
         resetCursor()
         return
-    if auto.locateCenterOnScreen('game_abort.png', confidence=0.65) is not None and started:
+    if auto.locateCenterOnScreen('game_abort.png', confidence=0.7) is not None and started:
         if skipPrep:
             skipPrep=False
         printf("game aborted")
@@ -43,7 +43,7 @@ def findUnexpected():
         if started:
             position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
         if position is None and started:
-            position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
+            position = auto.locateCenterOnScreen('game_quit.png', confidence=0.8)
         if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
@@ -56,12 +56,23 @@ def findUnexpected():
             unexpected=True
             printf("game disconnnected")
         if started:
-            position = auto.locateCenterOnScreen('game_exit.png', confidence=0.8)
+            position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
+        if position is None and started:
+            position = auto.locateCenterOnScreen('game_quit.png', confidence=0.8)
         if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
             input.click()
         return
+    if started:
+        promptHWND=win32gui.FindWindow(0, "致命错误")
+        if promptHWND:
+            skipPrep=False
+            printf("game errored")
+            win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+            win32gui.SetForegroundWindow(promptHWND)
+            input.press('enter')
+            return
 
 def findGame():
     global started, skipPrep, unexpected
@@ -112,6 +123,12 @@ def findGame():
                 win32gui.SetForegroundWindow(promptHWND)
                 input.press('n')
                 notFound=False
+            promptHWND=win32gui.FindWindow(0, "致命错误")
+            if promptHWND and started:
+                win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
+                win32gui.SetForegroundWindow(promptHWND)
+                input.press('enter')
+                notFound=False
             if notFound and started:
                 platHWND=win32gui.FindWindow(0, "Battle.net")
                 if platHWND:
@@ -128,6 +145,8 @@ def findGame():
     else:
         if started:
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
+            win32gui.BringWindowToTop(gameHWND)
+            win32gui.SetActiveWindow(gameHWND)
             findUnexpected()
     if started and platHWND:
         win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
@@ -140,10 +159,11 @@ def resetControl():
     input.keyUp('shift')
     input.mouseUp()
 
-def resetCursor():
-    centerPos=win32api.GetSystemMetrics(0)//2,win32api.GetSystemMetrics(1)//2
-    if auto.position() != centerPos:
-        auto.moveTo(centerPos[0],centerPos[1], duration=random.uniform(0.5,1), tween=auto.easeInOutQuad)
+def resetCursor(x=None, y=None, time=random.uniform(0.5,1)):
+    if x is None and y is None:
+        x,y=win32api.GetSystemMetrics(0)//2,win32api.GetSystemMetrics(1)//2
+    if auto.position() != (x,y):
+        auto.moveTo(x,y, duration=time, tween=auto.easeInOutQuad)
 
 def stop(exitWord):
     global started, mainExiting
@@ -187,12 +207,14 @@ def startListener():
 
 def moveMouse(duration):
     global started
+    x,y=auto.position()
     xOffSet = random.randint(-2,2)
     yOffSet = random.randint(-1,1)
     for _ in range(int(duration*1000)):
         if not started:
             break
         win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, xOffSet, yOffSet, 0, 0)
+    resetCursor(x=x, y=y)
 
 def randKey():
     global started
@@ -289,7 +311,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.24]")
+    print("[BattlePasser Version 1.25]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -334,8 +356,8 @@ if __name__ == '__main__':
     if not path.exists("game_leave.png") and noError:
         stop("Game leaving picture identifier 'game_leave.png' missing, exiting...")
         noError=False
-    if not path.exists("game_exit.png") and noError:
-        stop("Game exiting picture identifier 'game_exit.png' missing, exiting...")
+    if not path.exists("game_quit.png") and noError:
+        stop("Game quitting picture identifier 'game_quit.png' missing, exiting...")
         noError=False
     if not path.exists("plat_identify.png") and noError:
         stop("Battle.net game identifying picture identifier 'plat_identify.png' missing, exiting...")
