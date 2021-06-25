@@ -22,13 +22,14 @@ def printf(word):
 
 def findUnexpected():
     global skipPrep, unexpected, started
-    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep and started:
+    if auto.locateCenterOnScreen('game_end.png', confidence=0.65) is not None and skipPrep and started:
         skipPrep=False
         printf("game ended")
         resetCursor()
         return
-    if auto.locateCenterOnScreen('game_abort.png', confidence=0.5) is not None and skipPrep and started:
-        skipPrep=False
+    if auto.locateCenterOnScreen('game_abort.png', confidence=0.65) is not None and started:
+        if skipPrep:
+            skipPrep=False
         printf("game aborted")
         resetCursor()
         input.press('esc')
@@ -288,7 +289,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.23]")
+    print("[BattlePasser Version 1.24]")
     noError=True
     try:
         filelist=listdir(curdir)
