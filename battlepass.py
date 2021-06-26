@@ -145,8 +145,6 @@ def findGame():
     else:
         if started:
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
-            win32gui.BringWindowToTop(gameHWND)
-            win32gui.SetActiveWindow(gameHWND)
             findUnexpected()
     if started and platHWND:
         win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
@@ -311,7 +309,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.25]")
+    print("[BattlePasser Version 1.26]")
     noError=True
     try:
         filelist=listdir(curdir)
