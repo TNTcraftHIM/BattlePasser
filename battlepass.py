@@ -64,6 +64,21 @@ def findUnexpected():
             time.sleep(random.uniform(0, 1))
             input.click()
         return
+    if auto.locateCenterOnScreen('game_fail.png', confidence=0.8) is not None and started:
+        skipPrep=False
+        position=None
+        if not unexpected:
+            unexpected=True
+            printf("game failed")
+        if started:
+            position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
+        if position is None and started:
+            position = auto.locateCenterOnScreen('game_quit.png', confidence=0.8)
+        if position is not None and started:
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            time.sleep(random.uniform(0, 1))
+            input.click()
+        return
     if started:
         promptHWND=win32gui.FindWindow(0, "致命错误")
         if promptHWND:
@@ -309,7 +324,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.26]")
+    print("[BattlePasser Version 1.27]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -350,6 +365,9 @@ if __name__ == '__main__':
         noError=False
     if not path.exists("game_disconnect.png") and noError:
         stop("Game disconnecting picture identifier 'game_disconnect.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_fail.png") and noError:
+        stop("Game failing picture identifier 'game_fail.png' missing, exiting...")
         noError=False
     if not path.exists("game_leave.png") and noError:
         stop("Game leaving picture identifier 'game_leave.png' missing, exiting...")
