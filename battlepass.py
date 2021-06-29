@@ -3,7 +3,7 @@ from os import system, path, listdir, curdir
 import threading
 import pydirectinput as input
 import pyautogui as auto
-import win32con, win32api, win32gui
+import win32con, win32api, win32gui, win32process, win32ui
 import random
 import time
 
@@ -19,6 +19,43 @@ def printf(word):
     global mainExiting
     if not mainExiting:
         print("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]",word)
+
+def getGameHWND():
+    pid = win32process.GetWindowThreadProcessId(win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®"))[1]
+    def callback (hwnd, hwnds):
+        if win32gui.IsWindowVisible (hwnd) and win32gui.IsWindowEnabled (hwnd):
+            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
+            if found_pid == pid:
+                hwnds.append(hwnd)
+        return True
+    hwnds = []
+    win32gui.EnumWindows(callback, hwnds)
+    if len(hwnds) > 0:
+        return hwnds[0]
+    else:
+        return 0
+
+def resizeGame():
+    gameHWND=getGameHWND()
+    nonGameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
+    if gameHWND and gameHWND != nonGameHWND:
+        if win32gui.IsIconic(gameHWND):
+            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
+        win32gui.BringWindowToTop(gameHWND)
+        win32gui.SetActiveWindow(gameHWND)
+        win32gui.SetForegroundWindow(gameHWND)
+        if win32api.GetSystemMetrics(0) < 1920 or win32api.GetSystemMetrics(1) < 1080:
+            return
+        gameX, gameY, gameW, gameH = win32gui.GetWindowRect(gameHWND)
+        if gameX==0 and gameY==0 and gameW == 1920 and gameH == 1080:
+            return
+        win32ui.CreateWindowFromHandle(gameHWND).ModifyStyle(win32con.WS_CAPTION, 0)
+        win32gui.SetWindowPos(gameHWND, win32con.NULL, 0, 0, 1920,1080, win32con.SWP_FRAMECHANGED)
+        x, y, _, h = win32gui.GetWindowRect(gameHWND)
+        y=y+h//2
+        currX, currY=auto.position()
+        auto.click(x,y, duration=0.1)
+        auto.moveTo(currX, currY)
 
 def findUnexpected():
     global skipPrep, unexpected, started
@@ -117,14 +154,13 @@ def findGame():
             if position is not None and not gameSwitched and started:
                 auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
                 time.sleep(random.uniform(0, 1))
-                input.click(clicks=3, duration=1)
-                notFound=False
+                input.click()
             if started:
                 position = auto.locateCenterOnScreen('plat_start.png', confidence=0.8)
             if position is not None and gameSwitched and started:
                 auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
                 time.sleep(random.uniform(0, 1))
-                input.click(clicks=3, duration=1)
+                input.click()
                 notFound=False
             promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
             if promptHWND and started:
@@ -147,7 +183,10 @@ def findGame():
             if notFound and started:
                 platHWND=win32gui.FindWindow(0, "Battle.net")
                 if platHWND:
-                    win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
+                    if win32gui.IsIconic(platHWND):
+                        win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
+                    else:
+                        win32gui.SetWindowPos(platHWND, win32con.NULL, 0, 0, 1600,900, win32con.SWP_FRAMECHANGED)
                     win32gui.BringWindowToTop(platHWND)
                     win32gui.SetActiveWindow(platHWND)
                     win32gui.SetForegroundWindow(platHWND)
@@ -162,7 +201,8 @@ def findGame():
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
             findUnexpected()
     if started and platHWND:
-        win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
+        if not win32gui.IsIconic(platHWND):
+            win32gui.ShowWindow(platHWND, win32con.SW_SHOWMINIMIZED)
 
 def resetControl():
     input.keyUp('w')
@@ -276,6 +316,7 @@ def gamePrep():
                 i = 0
                 if started:
                     resetCursor()
+                    resizeGame()
         if started:
             i += 1
             time.sleep(0.1)
@@ -286,7 +327,8 @@ def mainLoop():
         try:
             gamePrep()
             if not started:
-                resetControl()
+                if skipPrep:
+                    resetControl()
                 break
             if started:
                 randKey()
