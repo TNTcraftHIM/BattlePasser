@@ -366,7 +366,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.27]")
+    print("[BattlePasser Version 1.30]")
     noError=True
     try:
         filelist=listdir(curdir)
