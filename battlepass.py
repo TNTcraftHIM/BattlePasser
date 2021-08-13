@@ -43,7 +43,6 @@ def resizeGame():
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
         win32gui.BringWindowToTop(gameHWND)
         win32gui.SetActiveWindow(gameHWND)
-        win32gui.SetForegroundWindow(gameHWND)
         if win32api.GetSystemMetrics(0) < 1920 or win32api.GetSystemMetrics(1) < 1080:
             return
         gameX, gameY, gameW, gameH = win32gui.GetWindowRect(gameHWND)
@@ -59,11 +58,12 @@ def resizeGame():
 
 def findUnexpected():
     global skipPrep, unexpected, started
-    if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None and skipPrep and started:
-        skipPrep=False
-        printf("game ended")
-        resetCursor()
-        return
+    if skipPrep and started:
+        if auto.locateCenterOnScreen('game_end.png', confidence=0.5) is not None or auto.locateCenterOnScreen('game_ended.png', confidence=0.5) is not None or auto.locateCenterOnScreen('game_ends.png', confidence=0.5) is not None:
+            skipPrep=False
+            printf("game ended")
+            resetCursor()
+            return
     if auto.locateCenterOnScreen('game_abort.png', confidence=0.7) is not None and started:
         if skipPrep:
             skipPrep=False
@@ -71,21 +71,22 @@ def findUnexpected():
         resetCursor()
         input.press('esc')
         return
-    if auto.locateCenterOnScreen('game_update.png', confidence=0.8) is not None and started:
-        skipPrep=False
-        position=None
-        if not unexpected:
-            unexpected=True
-            printf("game updated")
-        if started:
-            position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
-        if position is None and started:
-            position = auto.locateCenterOnScreen('game_quit.png', confidence=0.8)
-        if position is not None and started:
-            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
-            time.sleep(random.uniform(0, 1))
-            input.click()
-        return
+    if started:
+        if auto.locateCenterOnScreen('game_update.png', confidence=0.8) is not None or auto.locateCenterOnScreen('game_updated.png', confidence=0.8) is not None:
+            skipPrep=False
+            position=None
+            if not unexpected:
+                unexpected=True
+                printf("game updated")
+            if started:
+                position = auto.locateCenterOnScreen('game_leave.png', confidence=0.8)
+            if position is None and started:
+                position = auto.locateCenterOnScreen('game_quit.png', confidence=0.8)
+            if position is not None and started:
+                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+                time.sleep(random.uniform(0, 1))
+                input.click()
+            return
     if auto.locateCenterOnScreen('game_disconnect.png', confidence=0.8) is not None and started:
         skipPrep=False
         position=None
@@ -130,6 +131,8 @@ def findGame():
     global started, skipPrep, unexpected
     gameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
     platHWND=win32gui.FindWindow(0, "Battle.net")
+    if not platHWND:
+        platHWND=win32gui.FindWindow(0, "战网")
     if not gameHWND and started:
         printf("Game not running, booting...")
         if skipPrep and started:
@@ -143,45 +146,38 @@ def findGame():
             notFound=True
             position=None
             if started:
-                position = auto.locateCenterOnScreen('plat_identify.png', confidence=0.8)
-            if position is not None:
-                gameSwitched=True
-                notFound=False
-            else:
-                gameSwitched=False
-            if started:
+                win32gui.SetWindowPos(platHWND, win32con.NULL, 0, 0, 1600,900, win32con.SWP_FRAMECHANGED)
+                time.sleep(0.1)
                 position = auto.locateCenterOnScreen('plat_switch.png', confidence=0.8)
             if position is not None and not gameSwitched and started:
-                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
-                time.sleep(random.uniform(0, 1))
-                input.click()
-            if started:
-                position = auto.locateCenterOnScreen('plat_start.png', confidence=0.8)
-            if position is not None and gameSwitched and started:
-                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
-                time.sleep(random.uniform(0, 1))
-                input.click()
-                notFound=False
+                currX, currY=auto.position()
+                input.click(position[0],position[1])
+                input.press("enter", interval=0.1)
+                input.moveTo(currX, currY)
+                input.press("tab", presses=6, interval=0.1)
+                input.press("enter",interval=0.1)
             promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
             if promptHWND and started:
                 win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
                 win32gui.SetForegroundWindow(promptHWND)
-                input.press('n')
+                input.press('n',interval=0.1)
                 notFound=False
             promptHWND=win32gui.FindWindow(0, "设置为最佳设置？")
             if promptHWND and started:
                 win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
                 win32gui.SetForegroundWindow(promptHWND)
-                input.press('n')
+                input.press('n',interval=0.1)
                 notFound=False
             promptHWND=win32gui.FindWindow(0, "致命错误")
             if promptHWND and started:
                 win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
                 win32gui.SetForegroundWindow(promptHWND)
-                input.press('enter')
+                input.press('enter',interval=0.1)
                 notFound=False
             if notFound and started:
                 platHWND=win32gui.FindWindow(0, "Battle.net")
+                if not platHWND:
+                    platHWND=win32gui.FindWindow(0, "战网")
                 if platHWND:
                     if win32gui.IsIconic(platHWND):
                         win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
@@ -295,7 +291,7 @@ def randKey():
 
 def gamePrep():
     global skipPrep, maxnum, started
-    i=1
+    i = 1
     while started:
         findGame()
         if skipPrep:
@@ -366,7 +362,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.30]")
+    print("[BattlePasser Version 1.31]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -399,11 +395,20 @@ if __name__ == '__main__':
     if not path.exists("game_end.png") and noError:
         stop("Game ending picture identifier 'game_end.png' missing, exiting...")
         noError=False
+    if not path.exists("game_ended.png") and noError:
+        stop("Game ending picture identifier 'game_ended.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_ends.png") and noError:
+        stop("Game ending picture identifier 'game_ends.png' missing, exiting...")
+        noError=False
     if not path.exists("game_abort.png") and noError:
         stop("Game aborting picture identifier 'game_abort.png' missing, exiting...")
         noError=False
     if not path.exists("game_update.png") and noError:
         stop("Game updating picture identifier 'game_update.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_updated.png") and noError:
+        stop("Game updating picture identifier 'game_updated.png' missing, exiting...")
         noError=False
     if not path.exists("game_disconnect.png") and noError:
         stop("Game disconnecting picture identifier 'game_disconnect.png' missing, exiting...")
@@ -417,14 +422,8 @@ if __name__ == '__main__':
     if not path.exists("game_quit.png") and noError:
         stop("Game quitting picture identifier 'game_quit.png' missing, exiting...")
         noError=False
-    if not path.exists("plat_identify.png") and noError:
-        stop("Battle.net game identifying picture identifier 'plat_identify.png' missing, exiting...")
-        noError=False
     if not path.exists("plat_switch.png") and noError:
         stop("Battle.net game switching picture identifier 'plat_switch.png' missing, exiting...")
-        noError=False
-    if not path.exists("plat_start.png") and noError:
-        stop("Battle.net game starting picture identifier 'plat_start.png' missing, exiting...")
         noError=False
     if noError:
         print("Press F5/F6/F7 to start/stop/exit")
