@@ -299,7 +299,7 @@ def gamePrep():
         position = auto.locateCenterOnScreen(str(i)+'.png', confidence=0.8)
         if position is not None:
             if started:
-                auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeOutQuad)
+                auto.moveTo(position[0],position[1])
                 time.sleep(random.uniform(0, 1))
             if started:
                 input.click(clicks=3, duration=1)
@@ -362,7 +362,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.31]")
+    print("[BattlePasser Version 1.32]")
     noError=True
     try:
         filelist=listdir(curdir)
