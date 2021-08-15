@@ -41,7 +41,9 @@ def resizeGame():
     if gameHWND and gameHWND != nonGameHWND:
         if win32gui.IsIconic(gameHWND):
             win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
-        win32gui.BringWindowToTop(gameHWND)
+        else:
+            win32gui.ShowWindow(gameHWND, win32con.SW_MINIMIZE)
+            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
         win32gui.SetActiveWindow(gameHWND)
         if win32api.GetSystemMetrics(0) < 1920 or win32api.GetSystemMetrics(1) < 1080:
             return
@@ -362,7 +364,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.32]")
+    print("[BattlePasser Version 1.33]")
     noError=True
     try:
         filelist=listdir(curdir)
