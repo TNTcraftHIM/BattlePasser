@@ -6,6 +6,7 @@ import pyautogui as auto
 import win32con, win32api, win32gui, win32process, win32ui
 import random
 import time
+import ctypes
 
 maxnum=0
 mainExiting=False
@@ -14,6 +15,8 @@ skipPrep=False
 unexpected=False
 input.FAILSAFE=False
 auto.FAILSAFE=False
+kernel32 = ctypes.windll.kernel32
+kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 128)
 
 def printf(word):
     global mainExiting
@@ -87,7 +90,8 @@ def findUnexpected():
             if position is not None and started:
                 auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
                 time.sleep(random.uniform(0, 1))
-                input.click()
+                if auto.position()==(position[0],position[1]) and started:
+                    input.click()
             return
     if auto.locateCenterOnScreen('game_disconnect.png', confidence=0.8) is not None and started:
         skipPrep=False
@@ -102,7 +106,8 @@ def findUnexpected():
         if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
-            input.click()
+            if auto.position()==(position[0],position[1]) and started:
+                input.click()
         return
     if auto.locateCenterOnScreen('game_fail.png', confidence=0.8) is not None and started:
         skipPrep=False
@@ -117,7 +122,8 @@ def findUnexpected():
         if position is not None and started:
             auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
             time.sleep(random.uniform(0, 1))
-            input.click()
+            if auto.position()==(position[0],position[1]) and started:
+                input.click()
         return
     if started:
         promptHWND=win32gui.FindWindow(0, "致命错误")
@@ -153,11 +159,16 @@ def findGame():
                 position = auto.locateCenterOnScreen('plat_switch.png', confidence=0.8)
             if position is not None and not gameSwitched and started:
                 currX, currY=auto.position()
-                input.click(position[0],position[1])
-                input.press("enter", interval=0.1)
-                input.moveTo(currX, currY)
-                input.press("tab", presses=6, interval=0.1)
-                input.press("enter",interval=0.1)
+                auto.moveTo(position[0],position[1])
+                if auto.position()==(position[0],position[1]) and started:
+                    auto.click()
+                if started:
+                    auto.moveTo(160,790)
+                    if auto.position()==(160,790) and started:
+                        auto.click()
+                        auto.press('esc')
+                    if started:
+                        input.moveTo(currX, currY)
             promptHWND=win32gui.FindWindow(0, "是否在安全模式下运行？")
             if promptHWND and started:
                 win32gui.ShowWindow(promptHWND, win32con.SW_SHOWDEFAULT)
@@ -229,11 +240,11 @@ def stopError(e):
 
 def on_press(key):
     global started, skipPrep
-    if (key == keyboard.Key.f5):
+    if key == keyboard.Key.f5:
         if not started:
             started=True
             printf("starting...")
-    elif (key == keyboard.Key.f6):
+    elif key == keyboard.Key.f6:
         if started:
             started=False
             skipPrep=False
@@ -304,7 +315,8 @@ def gamePrep():
                 auto.moveTo(position[0],position[1])
                 time.sleep(random.uniform(0, 1))
             if started:
-                input.click(clicks=3, duration=1)
+                if auto.position()==(position[0],position[1]):
+                    input.click(clicks=3, duration=1)
                 if i == maxnum:
                     skipPrep=True
                     printf("game started")
@@ -364,7 +376,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.33]")
+    print("[BattlePasser Version 1.34]")
     noError=True
     try:
         filelist=listdir(curdir)
