@@ -42,11 +42,9 @@ def resizeGame():
     gameHWND=getGameHWND()
     nonGameHWND=win32gui.FindWindow(0, "Call of Duty®: Modern Warfare®")
     if gameHWND and gameHWND != nonGameHWND:
-        if win32gui.IsIconic(gameHWND):
-            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
-        else:
+        if not win32gui.IsIconic(gameHWND):
             win32gui.ShowWindow(gameHWND, win32con.SW_MINIMIZE)
-            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
+        win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
         win32gui.SetActiveWindow(gameHWND)
         if win32api.GetSystemMetrics(0) < 1920 or win32api.GetSystemMetrics(1) < 1080:
             return
@@ -125,6 +123,20 @@ def findUnexpected():
             if auto.position()==(position[0],position[1]) and started:
                 input.click()
         return
+    if auto.locateCenterOnScreen('game_prompt.png', confidence=0.8) is not None and started:
+        skipPrep=False
+        position=None
+        if not unexpected:
+            unexpected=True
+            printf("game prompted")
+        if started:
+            position = auto.locateCenterOnScreen('game_confirm.png', confidence=0.8)
+        if position is not None and started:
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            time.sleep(random.uniform(0, 1))
+            if auto.position()==(position[0],position[1]) and started:
+                input.click()
+        return
     if started:
         promptHWND=win32gui.FindWindow(0, "致命错误")
         if promptHWND:
@@ -194,8 +206,6 @@ def findGame():
                 if platHWND:
                     if win32gui.IsIconic(platHWND):
                         win32gui.ShowWindow(platHWND, win32con.SW_SHOWDEFAULT)
-                    else:
-                        win32gui.SetWindowPos(platHWND, win32con.NULL, 0, 0, 1600,900, win32con.SWP_FRAMECHANGED)
                     win32gui.BringWindowToTop(platHWND)
                     win32gui.SetActiveWindow(platHWND)
                     win32gui.SetForegroundWindow(platHWND)
@@ -207,7 +217,6 @@ def findGame():
             unexpected=False
     else:
         if started:
-            win32gui.ShowWindow(gameHWND, win32con.SW_SHOWDEFAULT)
             findUnexpected()
     if started and platHWND:
         if not win32gui.IsIconic(platHWND):
@@ -376,7 +385,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.34]")
+    print("[BattlePasser Version 1.35]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -430,11 +439,17 @@ if __name__ == '__main__':
     if not path.exists("game_fail.png") and noError:
         stop("Game failing picture identifier 'game_fail.png' missing, exiting...")
         noError=False
+    if not path.exists("game_prompt.png") and noError:
+        stop("Game prompting picture identifier 'game_prompt.png' missing, exiting...")
+        noError=False
     if not path.exists("game_leave.png") and noError:
         stop("Game leaving picture identifier 'game_leave.png' missing, exiting...")
         noError=False
     if not path.exists("game_quit.png") and noError:
         stop("Game quitting picture identifier 'game_quit.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_confirm.png") and noError:
+        stop("Game confirming picture identifier 'game_confirm.png' missing, exiting...")
         noError=False
     if not path.exists("plat_switch.png") and noError:
         stop("Battle.net game switching picture identifier 'plat_switch.png' missing, exiting...")
