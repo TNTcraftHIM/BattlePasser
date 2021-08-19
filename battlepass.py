@@ -126,9 +126,7 @@ def findUnexpected():
     if auto.locateCenterOnScreen('game_prompt.png', confidence=0.8) is not None and started:
         skipPrep=False
         position=None
-        if not unexpected:
-            unexpected=True
-            printf("game prompted")
+        printf("game prompted")
         if started:
             position = auto.locateCenterOnScreen('game_confirm.png', confidence=0.8)
         if position is not None and started:
@@ -136,6 +134,18 @@ def findUnexpected():
             time.sleep(random.uniform(0, 1))
             if auto.position()==(position[0],position[1]) and started:
                 input.click()
+        return
+    if auto.locateCenterOnScreen('game_switch.png', confidence=0.8) is not None and started:
+        skipPrep=False
+        position=None
+        printf("game switched")
+        if started:
+            position = auto.locateCenterOnScreen('game_switch.png', confidence=0.8)
+        if position is not None and started:
+            auto.moveTo(position[0],position[1],duration=random.uniform(1, 3),tween=auto.easeInOutQuad)
+            time.sleep(random.uniform(0, 1))
+            if auto.position()==(position[0],position[1]) and started:
+                input.press("right")
         return
     if started:
         promptHWND=win32gui.FindWindow(0, "致命错误")
@@ -385,7 +395,7 @@ def mainLoop():
             stopError(e)
 
 if __name__ == '__main__':
-    print("[BattlePasser Version 1.35]")
+    print("[BattlePasser Version 1.36]")
     noError=True
     try:
         filelist=listdir(curdir)
@@ -441,6 +451,9 @@ if __name__ == '__main__':
         noError=False
     if not path.exists("game_prompt.png") and noError:
         stop("Game prompting picture identifier 'game_prompt.png' missing, exiting...")
+        noError=False
+    if not path.exists("game_switch.png") and noError:
+        stop("Game switching picture identifier 'game_switch.png' missing, exiting...")
         noError=False
     if not path.exists("game_leave.png") and noError:
         stop("Game leaving picture identifier 'game_leave.png' missing, exiting...")
